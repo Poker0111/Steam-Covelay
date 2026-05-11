@@ -13,7 +13,7 @@ Item {
 
     readonly property int gap: 12
 
-    Rectangle {
+    Rectangle {//toast
         id: toast
         anchors.bottom: loadMoreBar.top
         anchors.horizontalCenter: parent.horizontalCenter
@@ -73,6 +73,7 @@ Item {
         }
         visible: !steamGrid.isLoadingImages
         clip: true
+        
 
         cellWidth:  root.cellW + root.gap
         cellHeight: root.cellH + 52 + root.gap
@@ -81,14 +82,12 @@ Item {
 
         ScrollBar.vertical: ScrollBar {
             policy: ScrollBar.AsNeeded
-            width: 8
-            contentItem: Rectangle { radius: 4; color: theme.border }
         }
 
         delegate: CsComponent {
-            type:        root.imageType
+            type: root.imageType
             imageSource: modelData.url
-            width:  root.cellW
+            width: root.cellW
             height: root.cellH + 52
 
             onDownloadClicked: {
@@ -100,8 +99,8 @@ Item {
     Rectangle {
         id: loadMoreBar
         anchors.bottom: parent.bottom
-        anchors.left:   parent.left
-        anchors.right:  parent.right
+        anchors.left: parent.left
+        anchors.right: parent.right
         height: steamGrid.imagesModel.length > 0 ? 52 : 0
         visible: height > 0
         color: theme.back_second
@@ -122,7 +121,7 @@ Item {
             width: 180
             height: 34
             visible: steamGrid.hasMoreImages && !steamGrid.isLoadingImages
-            onClicked: steamGrid.loadMoreImages(root.steamAppId, root.imageType)
+            onClicked: steamGrid.loadMoreImages()
         }
 
         BusyIndicator {

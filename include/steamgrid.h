@@ -19,6 +19,7 @@ class SteamGrid : public QObject {
     Q_PROPERTY(bool hasMoreImages READ hasMoreImages NOTIFY hasMoreImagesChanged)
     Q_PROPERTY(QString downloadStatus READ downloadStatus NOTIFY downloadStatusChanged)
     Q_PROPERTY(QString currentLanguage READ currentLanguage NOTIFY languageChanged)
+    
 
 public:
     explicit SteamGrid(QObject* parent = nullptr);
@@ -28,8 +29,8 @@ public:
     Q_INVOKABLE void createCache() { (void)QtConcurrent::run([this]() { buildCache(); }); }
     Q_INVOKABLE void reload() { (void)QtConcurrent::run([this]() { buildCache(); }); }
     Q_INVOKABLE void setLanguage(const QString& langCode);
-    Q_INVOKABLE void searchImages(const QString& steamAppId, const QString& type);
-    Q_INVOKABLE void loadMoreImages(const QString&, const QString&) {}
+    Q_INVOKABLE void searchImages(const QString& steamAppId, const QString& type, bool append = false);
+    Q_INVOKABLE void loadMoreImages();
     Q_INVOKABLE void downloadAndReplace(const QString& url, const QString& steamAppId, const QString& type);
 
     void setCurrentLanguage(const QString& lang) { m_currentLanguage = lang; }
@@ -60,6 +61,7 @@ private:
     void writeCache();
     void readCache();
     void buildCache();
+    void fetchImagesInternal(bool append);
     QString fetchGameName(const std::string& appId);
     static QString fileSuffix(const QString& type);
 
@@ -72,6 +74,9 @@ private:
     QString m_cacheFile="steamgrid.cache";
     QString m_apiKey;
     QString m_path;
+    QString m_lastAppId;
+    QString m_lastType;
+    int m_page=0;
 };
 
 #endif
