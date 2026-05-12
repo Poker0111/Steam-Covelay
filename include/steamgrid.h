@@ -32,7 +32,6 @@ public:
     Q_INVOKABLE void searchImages(const QString& steamAppId, const QString& type, bool append = false);
     Q_INVOKABLE void loadMoreImages();
     Q_INVOKABLE void downloadAndReplace(const QString& url, const QString& steamAppId, const QString& type);
-
     void setCurrentLanguage(const QString& lang) { m_currentLanguage = lang; }
 
     QVariantList gamesModel() const { return m_gamesModel; }

@@ -200,13 +200,6 @@ Window {
             spacing: 10
 
             CsButton {
-                btnText: qsTr("Cancel")
-                width: (parent.width - 10) / 2
-                height: 48
-                onClicked: root.close()
-            }
-
-            CsButton {
                 btnText: qsTr("Save")
                 width: (parent.width - 10) / 2
                 height: 48
@@ -216,6 +209,13 @@ Window {
                     steamGrid.saveConfiguration(apiKeyField.text, pathField.text)
                     root.close()
                 }
+            }
+
+            CsButton {
+                btnText: qsTr("Cancel")
+                width: (parent.width - 10) / 2
+                height: 48
+                onClicked: root.close()
             }
         }
     }

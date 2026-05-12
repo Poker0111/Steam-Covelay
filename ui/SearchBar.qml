@@ -48,6 +48,15 @@ Rectangle {
             Layout.preferredHeight: 35
             onClicked: root.settingsRequested()
         }
+        CsButton{
+            btnText: qsTr("Grid folder")
+            Layout.preferredWidth: 90
+            Layout.preferredHeight: 35
+            onClicked:{
+                let folderPath = "file:///" + steamGrid.path + "/grid/"
+                Qt.openUrlExternally(folderPath)
+            }
+        }
 
         CsButton {
             btnText: qsTr("Reload Library")

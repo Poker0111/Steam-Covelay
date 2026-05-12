@@ -61,6 +61,44 @@ Item {
         visible: !steamGrid.isLoadingImages && steamGrid.imagesModel.length === 0
     }
 
+ Flow {
+    anchors.fill: parent; anchors.margins: gap; spacing: gap
+    visible: steamGrid.isLoadingImages && steamGrid.imagesModel.length === 0
+
+    readonly property int totalMemes: 8 
+
+    Repeater {
+        model: 6
+        Rectangle {
+            width: root.cellW
+            height: root.cellH + 52
+            color: theme.textfield_c
+            radius: 6
+            clip: true
+            border.color: theme.frame
+            border.width: 2
+
+            Image {
+                anchors.fill: parent
+                
+                source: {
+                    let randomNumber = Math.floor(Math.random() * parent.parent.totalMemes) + 1;
+                    return "qrc:/SteamApp/resources/skeleton/" + randomNumber + ".png";
+                }
+
+                fillMode: Image.PreserveAspectCrop
+                opacity: 0.2
+                
+                SequentialAnimation on opacity {
+                    loops: Animation.Infinite
+                    NumberAnimation { from: 0.1; to: 0.3; duration: 1000; easing.type: Easing.InOutQuad }
+                    NumberAnimation { from: 0.3; to: 0.1; duration: 1000; easing.type: Easing.InOutQuad }
+                }
+            }
+        }
+    }
+}
+
     GridView {
         id: grid
         anchors {
