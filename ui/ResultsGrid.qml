@@ -11,7 +11,7 @@ Item {
     readonly property int cellW: imageType === "Heroes" ? 360 : imageType === "Icons" ? 130 : imageType === "Logos" ? 250 : 160
     readonly property int cellH: imageType === "Heroes" ? 175 : imageType === "Icons" ? 130 : imageType === "Logos" ? 115 : 225
 
-    readonly property int gap: 12
+    readonly property int gap: 20
 
     Rectangle {//toast
         id: toast
@@ -131,7 +131,7 @@ Item {
             right: parent.right
             bottom: loadMoreBar.top
             margins: root.gap
-            rightMargin: root.gap + 10
+            rightMargin: root.gap + 5
         }
         visible: !steamGrid.isLoadingImages
         clip: true
@@ -149,9 +149,9 @@ Item {
         delegate: CsComponent {
             type: root.imageType
             imageSource: modelData.url
+            author: modelData.author
             width: root.cellW
-            height: root.cellH + 52
-
+            height: root.cellH + 65
             onDownloadClicked: {
                 steamGrid.downloadAndReplace(modelData.url, root.steamAppId, root.imageType)
             }

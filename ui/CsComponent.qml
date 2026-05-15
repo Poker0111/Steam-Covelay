@@ -4,9 +4,10 @@ import QtQuick.Controls
 Item {
     id: root
 
-    property url    imageSource: ""
-    property string btnText:     qsTr("DOWNLOAD")
-    property string type:        "Grids"
+    property url imageSource: ""
+    property string btnText: qsTr("DOWNLOAD")
+    property string type: "Grids"
+    property string author: "Unknown"
 
     signal downloadClicked()
 
@@ -27,6 +28,7 @@ Item {
         radius: 6
         border.width: 2
         border.color: hoverHandler.hovered ? theme.border_cilick : theme.textfield_c
+        clip:true
 
         HoverHandler { id: hoverHandler }
 
@@ -72,13 +74,32 @@ Item {
                 }
             }
 
+       Rectangle {
+                width: parent.width
+                height: 16
+                color: "transparent"
+                visible: height > 0
+
+                Text {
+                    anchors.centerIn: parent
+                    text: qsTr("by ") + root.author
+                    color: theme.font
+                    font.pixelSize: 10
+                    font.italic: true
+                    opacity: 0.5
+                    elide: Text.ElideRight
+                    width: parent.width - 10
+                    horizontalAlignment: Text.AlignHCenter
+                }
+            }
+
             Rectangle {
                 width: parent.width
                 height: 52
                 color: "transparent"
 
                 CsButton {
-                    width: parent.width - 20
+                    width: parent.width - 24
                     height: 34
                     anchors.centerIn: parent
                     btnText: root.btnText

@@ -98,6 +98,7 @@ set(TS_FILES
 
 qt_add_translations(appSteamUI    
     TS_FILES ${TS_FILES}
+    LUPDATE_OPTIONS "-extensions" "qml,cpp,h"
     SOURCES
         ui/Main.qml
         ui/SearchBar.qml
@@ -106,4 +107,6 @@ qt_add_translations(appSteamUI
         ui/Progress.qml
         ui/CsComponent.qml
         ui/CsButton.qml
+        source/steamgrid.cpp
+        include/steamgrid.h
 )

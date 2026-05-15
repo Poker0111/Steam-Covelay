@@ -168,12 +168,17 @@ void SteamGrid::searchImages(const QString& steamAppId, const QString& type, boo
                 if (data["success"].get<bool>()) {
                     for (auto& item : data["data"]) {
                         QString itemUrl = QString::fromStdString(item["url"].get<std::string>());
+                        QString author= "Unknow";
+                        if (item.contains("author") && !item["author"]["name"].is_null()) {
+                            author=QString::fromStdString(item["author"]["name"].get<std::string>());
+                        }
                         newResults.append(QVariantMap{
                             {"url", itemUrl},
                             {"thumb", (item.contains("thumb") && !item["thumb"].is_null()) ? QString::fromStdString(item["thumb"].get<std::string>()) : itemUrl},
                             {"width", item.value("width", 0)},
                             {"height", item.value("height", 0)},
-                            {"id", item["id"].get<int>()}
+                            {"id", item["id"].get<int>()},
+                            {"author", author}
                         });
                     }
                     if(newResults.isEmpty())errormsg="No images found for this category.";

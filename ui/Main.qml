@@ -4,10 +4,10 @@ import QtQuick.Layouts
 
 ApplicationWindow {
     id: root
-    width: 900
-    height: 600
-    minimumWidth: 650
-    minimumHeight: 400
+    width: 1125
+    height: 755
+    minimumWidth: 765
+    minimumHeight: 455
     visible: true
     title: qsTr("Steam Covelay")
 
