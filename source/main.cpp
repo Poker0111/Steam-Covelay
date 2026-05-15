@@ -5,6 +5,7 @@
 #include <QSettings>
 #include <QtQuickControls2/QQuickStyle>
 #include <QDebug>
+#include <QIcon>
 #include "steamgrid.h"
 
 int main(int argc, char *argv[]) {
@@ -12,6 +13,7 @@ int main(int argc, char *argv[]) {
 
     QGuiApplication app(argc, argv);
     QQuickStyle::setStyle("Basic");
+    app.setWindowIcon(QIcon(":/SteamApp/resources/logo.ico"));
 
     QSettings settings("SteamGridChanger", "SteamGridChanger");
     QString lang = settings.value("language", "en").toString();

@@ -82,7 +82,7 @@ Item {
 
                 Text {
                     anchors.centerIn: parent
-                    text: qsTr("by ") + root.author
+                    text: qsTr("by ")+ " " + root.author
                     color: theme.font
                     font.pixelSize: 10
                     font.italic: true

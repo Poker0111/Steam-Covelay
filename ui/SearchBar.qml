@@ -50,7 +50,7 @@ Rectangle {
         }
         CsButton{
             btnText: qsTr("Grid folder")
-            Layout.preferredWidth: 90
+            Layout.preferredWidth: 100
             Layout.preferredHeight: 35
             onClicked:{
                 let folderPath = "file:///" + steamGrid.path + "/grid/"
@@ -60,7 +60,7 @@ Rectangle {
 
         CsButton {
             btnText: qsTr("Reload Library")
-            Layout.preferredWidth: 130
+            Layout.preferredWidth: 150
             Layout.preferredHeight: 35
             onClicked: root.reloadRequested()
         }
