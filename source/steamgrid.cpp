@@ -31,7 +31,7 @@ void SteamGrid::writeCache() {
     file << "API_KEY=" << m_apiKey.toStdString() << "\n";
     for (const auto& item : m_gamesModel) {
         auto m = item.toMap();
-        file << m["id"].toString().toStdString() << "-"
+        file << m["id"].toString().toStdString() << "|"
              << m["title"].toString().toStdString() << "\n";
     }
 }
@@ -47,7 +47,7 @@ void SteamGrid::readCache() {
         if      (row.startsWith("PATH="))    m_path   = row.mid(5);
         else if (row.startsWith("API_KEY=")) m_apiKey = row.mid(8);
         else {
-            int sep = row.indexOf('-');
+            int sep = row.indexOf('|');
             if (sep != -1)
                 m_gamesModel.append(QVariantMap{{"id", row.left(sep)}, {"title", row.mid(sep + 1)}});
         }
@@ -146,13 +146,17 @@ void SteamGrid::searchImages(const QString& steamAppId, const QString& type, boo
     m_isLoadingImages = true;
     emit isLoadingImagesChanged();
     QString endpoint = ENDPOINTS.value(type, "grids");
-    (void)QtConcurrent::run([this, steamAppId, endpoint, append]() {
+    (void)QtConcurrent::run([this, steamAppId, endpoint, append,type]() {
         std::string url = "https://www.steamgriddb.com/api/v2/" + endpoint.toStdString() + "/steam/" + steamAppId.toStdString();
+        std::string dimensionSize;
+        if(type=="grids") dimensionSize="600x900";
+        else if(type=="heroes") dimensionSize="1920x620,3840x1240";
         auto r = cpr::Get(
             cpr::Url{url},
             cpr::Header{{"Authorization", "Bearer " + m_apiKey.toStdString()}},
             cpr::Parameters{{"page", std::to_string(m_page)},
-                            {"types", "static,animated"}}
+                            {"types", "static,animated"},
+                            {"dimensions",dimensionSize}}
         );
         QVariantList newResults;
         if (r.status_code == 200) {
