@@ -19,7 +19,7 @@ class SteamGrid : public QObject {
     Q_PROPERTY(bool hasMoreImages READ hasMoreImages NOTIFY hasMoreImagesChanged)
     Q_PROPERTY(QString downloadStatus READ downloadStatus NOTIFY downloadStatusChanged)
     Q_PROPERTY(QString currentLanguage READ currentLanguage NOTIFY languageChanged)
-    
+    Q_PROPERTY(QString Error READ Error NOTIFY errorSignal)
 
 public:
     explicit SteamGrid(QObject* parent = nullptr);
@@ -43,6 +43,7 @@ public:
     QString path() const { return m_path; }
     QString downloadStatus() const { return m_downloadStatus; }
     QString currentLanguage() const { return m_currentLanguage; }
+    QString Error() const { return m_Error; }
 
 signals:
     void gamesModelChanged();
@@ -55,14 +56,13 @@ signals:
     void hasMoreImagesChanged();
     void downloadStatusChanged();
     void languageChanged(const QString& langCode);
+    void errorSignal();
 
 private:
     void writeCache();
     void readCache();
     void buildCache();
     void fetchImagesInternal(bool append);
-    QString fetchGameName(const std::string& appId);
-    static QString fileSuffix(const QString& type);
 
     QVariantList m_gamesModel;
     QVariantList m_imagesModel;
@@ -75,6 +75,9 @@ private:
     QString m_path;
     QString m_lastAppId;
     QString m_lastType;
+    QString m_Error;
+    QString fetchGameName(const std::string& appId);
+    static QString fileSuffix(const QString& type);
     int m_page=0;
 };
 

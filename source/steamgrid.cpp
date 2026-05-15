@@ -135,6 +135,8 @@ void SteamGrid::buildCache() {
 }
 
 void SteamGrid::searchImages(const QString& steamAppId, const QString& type, bool append) {
+    m_Error="";
+    emit errorSignal();
     if (m_apiKey.isEmpty() || steamAppId.isEmpty()) return;
     if (!append) {
         m_page = 0;
@@ -159,6 +161,7 @@ void SteamGrid::searchImages(const QString& steamAppId, const QString& type, boo
                             {"dimensions",dimensionSize}}
         );
         QVariantList newResults;
+        QString errormsg;
         if (r.status_code == 200) {
             try {
                 auto data = json::parse(r.text);
@@ -173,8 +176,15 @@ void SteamGrid::searchImages(const QString& steamAppId, const QString& type, boo
                             {"id", item["id"].get<int>()}
                         });
                     }
+                    if(newResults.isEmpty())errormsg="No images found for this category.";
                 }
-            } catch (...) {}
+            } catch (...) {errormsg = tr("Failed to parse API response.");}
+        }else if (r.status_code == 0) {
+            errormsg = tr("No internet connection or server unreachable.");
+        } else if (r.status_code == 401) {
+            errormsg = tr("Invalid API Key.");
+        } else {
+            errormsg = tr("Error: %1").arg(r.status_code);
         }
         QMetaObject::invokeMethod(this, [this, newResults, append]() {
             if (append) m_imagesModel.append(newResults);

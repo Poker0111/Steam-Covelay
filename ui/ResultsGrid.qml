@@ -21,7 +21,7 @@ Item {
         width: toastText.implicitWidth + 32
         height: 38
         radius: 6
-        color: steamGrid.downloadStatus.startsWith("OK") ? "#1a9fff" : "#c0392b"
+        color: steamGrid.downloadStatus.startsWith("OK") ? "#126cac" : "#922b20"
         visible: opacity > 0
         opacity: 0
         z: 10
@@ -53,13 +53,37 @@ Item {
         visible: running
     }
 
+    Column {
+    anchors.centerIn: parent
+    spacing: 15
+    visible: !steamGrid.isLoadingImages && (steamGrid.lastError !== "" || steamGrid.imagesModel.length === 0)
+    width: parent.width * 0.8
+
     Text {
-        anchors.centerIn: parent
-        text: qsTr("Search the game and choose the image type")
-        color: theme.font
+        id: infoText
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: parent.width
+        horizontalAlignment: Text.AlignHCenter
+        wrapMode: Text.WordWrap
+        color: steamGrid.lastError !== "" ? "#ff4444" : theme.font
         font.pixelSize: 16
-        visible: !steamGrid.isLoadingImages && steamGrid.imagesModel.length === 0
+
+        text: {
+            if (steamGrid.lastError && steamGrid.lastError !== "") {
+                return steamGrid.lastError;
+            }
+            if (!root.steamAppId || root.steamAppId === "") {
+                return qsTr("Search for a game and choose type above");
+                color: theme.font
+            }
+            if (steamGrid.imagesModel.length === 0) {
+                return qsTr("No results found for this selection");
+            }
+            return "";
+        }
     }
+
+}
 
  Flow {
     anchors.fill: parent; anchors.margins: gap; spacing: gap
