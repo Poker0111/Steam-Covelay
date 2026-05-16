@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Steam Coverlay
+Comment=Nakładka UI dla Steama
+Exec=Steam_Coverlay
+Icon=steamui
+Terminal=false
+Categories=Game;Utility;

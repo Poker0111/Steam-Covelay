@@ -14,9 +14,7 @@ qt_standard_project_setup()
 
 include(FetchContent)
 
-
 find_package(CURL)
-
 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz)
@@ -33,17 +31,19 @@ endif()
 
 FetchContent_MakeAvailable(cpr)
 
-
-add_executable(Steam_Coverlay WIN32
+add_executable(Steam_Coverlay
     include/steamgrid.h
     source/main.cpp
     source/steamgrid.cpp
-    resources/resources.rc
-    
 )
+
 if(WIN32)
     set(app_icon_resource "${CMAKE_CURRENT_SOURCE_DIR}/resources/logo.ico")
-    target_sources(Steam_Coverlay PRIVATE ${app_icon_resource})
+    target_sources(Steam_Coverlay PRIVATE 
+        ${app_icon_resource}
+        resources/resources.rc
+    )
+    set_target_properties(Steam_Coverlay PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
 target_include_directories(Steam_Coverlay PRIVATE include)
@@ -81,8 +81,6 @@ qt_add_qml_module(Steam_Coverlay
         resources/skeleton/8.png
 )
 
-
-
 target_link_libraries(Steam_Coverlay PRIVATE 
     Qt6::Gui 
     Qt6::Qml 
@@ -115,3 +113,14 @@ qt_add_translations(Steam_Coverlay
         source/steamgrid.cpp
         include/steamgrid.h
 )
+if(NOT WIN32)
+    # 1. Generowanie pliku .desktop w folderze budowania
+    configure_file(linux/steamui.desktop.in ${CMAKE_CURRENT_BINARY_DIR}/steamui.desktop @ONLY)
+
+    # 2. Definiowanie gdzie mają trafić pliki podczas instalacji (wymagane dla AppImage)
+    install(TARGETS Steam_Coverlay DESTINATION bin)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/steamui.desktop DESTINATION share/applications)
+    
+    # Jako ikonę systemową instalujemy plik set.svg i zmieniamy jego nazwę na steamui.svg
+    install(FILES resources/set.svg DESTINATION share/icons/hicolor/scalable/apps RENAME steamui.svg)
+endif()
