@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QtConcurrent>
 #include <QTimer>
+#include <QDir>
 #include <set>
 
 namespace fs = std::filesystem;
@@ -44,7 +45,11 @@ void SteamGrid::readCache() {
     while (std::getline(file, line)) {
         if (line.empty()) continue;
         QString row = QString::fromStdString(line);
-        if      (row.startsWith("PATH="))    m_path   = row.mid(5);
+        if (row.startsWith("PATH=")) {
+            QString rawPath = row.mid(5).trimmed();
+            rawPath.replace("\\", "/");
+            m_path = QDir::cleanPath(rawPath);
+        }
         else if (row.startsWith("API_KEY=")) m_apiKey = row.mid(8);
         else {
             int sep = row.indexOf('|');
@@ -62,9 +67,13 @@ void SteamGrid::init() {
 
 void SteamGrid::saveConfiguration(const QString& apiKey, const QString& steamPath) {
     if (apiKey.trimmed().isEmpty() || steamPath.trimmed().isEmpty()) return;
-    bool pathChanged = (m_path != steamPath.trimmed());
+    
+    QString cleanedPath = QDir::cleanPath(steamPath.trimmed());
+    
+    bool pathChanged = (m_path != cleanedPath);
     m_apiKey = apiKey.trimmed();
-    m_path   = steamPath.trimmed();
+    m_path   = cleanedPath;
+    
     emit configChanged();
     writeCache();
     if (pathChanged || m_gamesModel.isEmpty()) {
@@ -100,11 +109,14 @@ QString SteamGrid::fetchGameName(const std::string& appId) {
 }
 
 void SteamGrid::buildCache() {
-    std::string libDir = m_path.toStdString() + "\\librarycache";
+    fs::path libDir = fs::path(m_path.toStdString()) / "librarycache";
+
     auto emitProgress = [this](double p) {
         QMetaObject::invokeMethod(this, [this, p] { emit progressChanged(p); }, Qt::QueuedConnection);
     };
+
     if (!fs::exists(libDir)) { emitProgress(1.0); return; }
+
     std::set<std::string> allIds;
     for (auto& entry : fs::directory_iterator(libDir)) {
         if (!entry.is_regular_file()) continue;
@@ -113,18 +125,21 @@ void SteamGrid::buildCache() {
             if (isdigit(c)) id += c; else break;
         if (!id.empty()) allIds.insert(id);
     }
+
     int total = static_cast<int>(allIds.size());
     if (total == 0) { emitProgress(1.0); return; }
+
     emitProgress(0.01);
+
     int current = 0;
     QVariantList result;
     for (const auto& id : allIds) {
-        double pct = static_cast<double>(++current) / total;
-        emitProgress(pct);
+        emitProgress(static_cast<double>(++current) / total);
         QString name = fetchGameName(id);
-        if (name.isEmpty()) continue;
-        result.append(QVariantMap{{"id", QString::fromStdString(id)}, {"title", name}});
+        if (!name.isEmpty())
+            result.append(QVariantMap{{"id", QString::fromStdString(id)}, {"title", name}});
     }
+
     QMetaObject::invokeMethod(this, [this, result]() {
         m_gamesModel = result;
         writeCache();
@@ -135,7 +150,7 @@ void SteamGrid::buildCache() {
 }
 
 void SteamGrid::searchImages(const QString& steamAppId, const QString& type, bool append) {
-    m_Error="";
+    m_Error = "";
     emit errorSignal();
     if (m_apiKey.isEmpty() || steamAppId.isEmpty()) return;
     if (!append) {
@@ -144,61 +159,77 @@ void SteamGrid::searchImages(const QString& steamAppId, const QString& type, boo
         emit imagesModelChanged();
     }
     m_lastAppId = steamAppId;
-    m_lastType = type;
+    m_lastType  = type;
     m_isLoadingImages = true;
     emit isLoadingImagesChanged();
+
     QString endpoint = ENDPOINTS.value(type, "grids");
-    (void)QtConcurrent::run([this, steamAppId, endpoint, append,type]() {
-        std::string url = "https://www.steamgriddb.com/api/v2/" + endpoint.toStdString() + "/steam/" + steamAppId.toStdString();
+
+    (void)QtConcurrent::run([this, steamAppId, endpoint, append, type]() {
+        std::string url = "https://www.steamgriddb.com/api/v2/"
+                        + endpoint.toStdString()
+                        + "/steam/" + steamAppId.toStdString();
+
         std::string dimensionSize;
-        if(type=="grids") dimensionSize="600x900";
-        else if(type=="heroes") dimensionSize="1920x620,3840x1240";
+        if (type == "Grids")   dimensionSize = "600x900";
+        else if (type == "Heroes") dimensionSize = "1920x620,3840x1240";
+
+        cpr::Parameters params{
+            {"page",  std::to_string(m_page)},
+            {"types", "static,animated"}
+        };
+        if (!dimensionSize.empty())
+            params.Add({"dimensions", dimensionSize});
+
         auto r = cpr::Get(
             cpr::Url{url},
             cpr::Header{{"Authorization", "Bearer " + m_apiKey.toStdString()}},
-            cpr::Parameters{{"page", std::to_string(m_page)},
-                            {"types", "static,animated"},
-                            {"dimensions",dimensionSize}}
+            params
         );
+
         QVariantList newResults;
         QString errormsg;
+
         if (r.status_code == 200) {
             try {
                 auto data = json::parse(r.text);
                 if (data["success"].get<bool>()) {
                     for (auto& item : data["data"]) {
                         QString itemUrl = QString::fromStdString(item["url"].get<std::string>());
-                        QString author= "Unknow";
-                        if (item.contains("author") && !item["author"]["name"].is_null()) {
-                            author=QString::fromStdString(item["author"]["name"].get<std::string>());
-                        }
+                        QString author  = "Unknown";
+                        if (item.contains("author") && !item["author"]["name"].is_null())
+                            author = QString::fromStdString(item["author"]["name"].get<std::string>());
                         newResults.append(QVariantMap{
-                            {"url", itemUrl},
-                            {"thumb", (item.contains("thumb") && !item["thumb"].is_null()) ? QString::fromStdString(item["thumb"].get<std::string>()) : itemUrl},
-                            {"width", item.value("width", 0)},
+                            {"url",    itemUrl},
+                            {"thumb",  (item.contains("thumb") && !item["thumb"].is_null())
+                                       ? QString::fromStdString(item["thumb"].get<std::string>()) : itemUrl},
+                            {"width",  item.value("width",  0)},
                             {"height", item.value("height", 0)},
-                            {"id", item["id"].get<int>()},
+                            {"id",     item["id"].get<int>()},
                             {"author", author}
                         });
                     }
-                    if(newResults.isEmpty())errormsg="No images found for this category.";
+                    if (newResults.isEmpty()) errormsg = "No images found for this category.";
                 }
-            } catch (...) {errormsg = tr("Failed to parse API response.");}
-        }else if (r.status_code == 0) {
+            } catch (...) { errormsg = tr("Failed to parse API response."); }
+        } else if (r.status_code == 0) {
             errormsg = tr("No internet connection or server unreachable.");
         } else if (r.status_code == 401) {
             errormsg = tr("Invalid API Key.");
         } else {
             errormsg = tr("Error: %1").arg(r.status_code);
         }
-        QMetaObject::invokeMethod(this, [this, newResults, append]() {
+
+        QMetaObject::invokeMethod(this, [this, newResults, errormsg, append]() {
             if (append) m_imagesModel.append(newResults);
-            else m_imagesModel = newResults;
-            m_hasMoreImages = !newResults.isEmpty();
+            else        m_imagesModel = newResults;
+            m_hasMoreImages   = !newResults.isEmpty();
             m_isLoadingImages = false;
+            m_Error           = errormsg;
             emit imagesModelChanged();
             emit isLoadingImagesChanged();
             emit hasMoreImagesChanged();
+            emit errorSignal();
         }, Qt::QueuedConnection);
     });
 }
@@ -207,26 +238,42 @@ void SteamGrid::downloadAndReplace(const QString& url, const QString& steamAppId
     if (url.isEmpty() || steamAppId.isEmpty()) return;
     m_downloadStatus = "";
     emit downloadStatusChanged();
+
     (void)QtConcurrent::run([this, url, steamAppId, type]() {
         QString ext = url.section('.', -1).toLower();
         if (ext.isEmpty() || ext.length() > 5) ext = "png";
-        QString suffix = fileSuffix(type);
+
+        QString suffix   = fileSuffix(type);
         QString baseName = steamAppId + (type == "Grids" ? suffix + "p" : suffix);
-        std::string dir = m_path.toStdString() + "\\grid\\";
+
+        fs::path dir = fs::path(m_path.toStdString()) / "grid";
         fs::create_directories(dir);
+
         for (auto& oldExt : {"png", "jpg", "jpeg", "webp", "gif"}) {
-            std::string old = dir + baseName.toStdString() + "." + oldExt;
+            fs::path old = dir / (baseName.toStdString() + "." + oldExt);
             if (fs::exists(old)) fs::remove(old);
         }
-        auto r = cpr::Get(cpr::Url{url.toStdString()}, cpr::Header{{"User-Agent", "Mozilla/5.0"}});
+
+        fs::path newPath = dir / (baseName.toStdString() + "." + ext.toStdString());
+
+        auto r = cpr::Get(
+            cpr::Url{url.toStdString()},
+            cpr::Header{{"User-Agent", "Mozilla/5.0"}}
+        );
+
         QString status;
         if (r.status_code == 200) {
-            std::ofstream ofs(dir + baseName.toStdString() + "." + ext.toStdString(), std::ios::binary);
+            std::ofstream ofs(newPath, std::ios::binary);
             if (ofs.is_open()) {
                 ofs.write(r.text.data(), static_cast<std::streamsize>(r.text.size()));
                 status = "OK";
-            } else status = "Error: no write permission";
-        } else status = "HTTP " + QString::number(r.status_code);
+            } else {
+                status = "Error: no write permission";
+            }
+        } else {
+            status = "HTTP " + QString::number(r.status_code);
+        }
+
         QMetaObject::invokeMethod(this, [this, status]() {
             m_downloadStatus = status;
             emit downloadStatusChanged();
